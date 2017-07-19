@@ -9,6 +9,11 @@
  import Foundation
  import UIKit
  
+ 
+ protocol FA_TableViewControllerDelegate {
+    func removeCellSubTitleLabel()
+ }
+ 
  class FA_TableViewController: UITableViewController {
     
     // ===== Variables ===== //
@@ -22,7 +27,7 @@
     override func viewDidLoad() {
         getConversation()
         
-        //    tableView.rowHeight = UITableViewAutomaticDimension
+            tableView.rowHeight = UITableViewAutomaticDimension
         //    tableView.estimatedRowHeight = 140
     }
     override func viewDidAppear(_ animated: Bool) {
@@ -40,25 +45,35 @@
     }
     
     override func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+//        * If the content_loaded property of a message is true: display the body of a message first
+//        * if the content_loaded property of a message is false: display the blurb. A tap on the blurb should hide it and display the `body` instead. Once a message is expanded, you cannot close it. (By default, some messages are `content_loaded = false` but the body is already set. This is to simplify the test).
+        
         let cell = tableView.dequeueReusableCell(withIdentifier: messageCellIdentifier, for: indexPath) as! FA_TableViewCell
         
         let message = self.messages[indexPath.row]
         
         cell.titleLabel?.text = message.from
-        cell.subTitleLabel?.text = message.blurb
+        cell.message = message
         
-        cell.webView.tag = indexPath.row
-        cell.webView.delegate = self
-        cell.webView.loadHTMLString(message.body, baseURL: nil)
-        cell.webView.scalesPageToFit = true
+        if message.content_loaded {
+            cell.webView.tag = indexPath.row
+            cell.webView.delegate = self
+            cell.webView.loadHTMLString(message.body, baseURL: nil)
+            cell.webView.scalesPageToFit = true
+//            cell.removeSubTitle()
+        } else {
+            cell.subTitleLabel?.text = message.blurb
+        }
         
+        
+
         return cell
     }
     
     override func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-        return UITableViewAutomaticDimension
+//        return UITableViewAutomaticDimension
+        return contentHeights[indexPath.row]
     }
-    
     
     // ===== Methods ===== //
     fileprivate func getConversation() {
@@ -72,28 +87,35 @@
             })
         } catch {}
     }
-    
  }
  extension FA_TableViewController: UIWebViewDelegate {
     func webViewDidFinishLoad(_ webView: UIWebView) {
-        if (contentHeights[webView.tag] != 0.0) {
-            // we already know height, no need to reload cell
-            return
-        }
+//        if (messages[webView.tag].content_loaded) {
+//            return
+//        } else {
+//            messages[webView.tag].content_loaded = true
+//        }
         
+        if contentHeights[webView.tag] != 0.0 {
+            return
+        } else {
+//            messages[webView.tag].content_loaded = true
+        }
+
+
 //        var frame:CGRect = webView.frame
 //        frame.size.height = 1
 //        webView.frame = frame
 //        var fittingSize:CGSize = webView.sizeThatFits(CGSize.zero)
 //        frame.size = fittingSize
 //        webView.frame = frame
-        
-        contentHeights[webView.tag] = webView.scrollView.contentSize.height
-//        tableView.reloadRowsAtIndexPaths([NSIndexPath(forRow: webView.tag, inSection: 0)], withRowAnimation: .Automatic)
 
-//        var indexpath:[IndexPath] =
+        contentHeights[webView.tag] = webView.scrollView.contentSize.height
+        print("webView tag:")
+        print(webView.tag)
+        print("contentHeight:")
+        print(contentHeights[webView.tag])
         
         tableView.reloadRows(at: [IndexPath(item: webView.tag, section: 0)], with: .automatic)
     }
-    
  }
